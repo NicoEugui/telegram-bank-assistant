@@ -24,9 +24,7 @@ class ConversationAgent:
 
         llm = ChatOpenAI(temperature=0, openai_api_key=self.openai_api_key)
 
-        tools = [
-            answer_bank_faq
-        ]
+        tools = [answer_bank_faq]
 
         return initialize_agent(
             tools=tools,
@@ -36,5 +34,6 @@ class ConversationAgent:
             verbose=True,
         )
 
-    async def run(self, user_input: str) -> str:
-        return self.agent.invoke({"input": user_input})
+    def run(self, user_input: str) -> str:
+        result = self.agent.invoke({"input": user_input})
+        return result["output"]
