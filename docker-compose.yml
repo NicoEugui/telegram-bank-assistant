@@ -1,0 +1,36 @@
+services:
+  nicobank-app:
+    container_name: nicobank-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    volumes:
+      - .:/app
+    depends_on:
+      - nicobank-redis
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - REDIS_HOST=nicobank-redis
+      - REDIS_PORT=6379
+    command: python main.py
+    networks:
+      - nicobank-net
+
+  nicobank-redis:
+    container_name: nicobank-redis
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - nicobank_redis_data:/data
+    networks:
+      - nicobank-net
+
+volumes:
+  nicobank_redis_data:
+
+networks:
+  nicobank-net:
+    driver: bridge
