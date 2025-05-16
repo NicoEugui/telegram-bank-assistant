@@ -1,36 +1,69 @@
-from langchain.agents import initialize_agent, AgentType
+from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_openai import ChatOpenAI
-
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from bot.prompts.system_prompts import banking_assistant_prompt
 from bot.tools.answer_bank_faq import answer_bank_faq
+from config import (
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    SESSION_TTL_SECONDS,
+    CONTEXT_WINDOW_LENGTH,
+    REDIS_HOST,
+    REDIS_PORT,
+)
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ConversationAgent:
-    def __init__(self, user_id: str, redis_url: str, openai_api_key: str):
+    def __init__(self, user_id: str):
         self.user_id = user_id
-        self.redis_url = redis_url
-        self.openai_api_key = openai_api_key
+        self.redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}"
         self.agent = self._build_agent()
 
-    def _build_agent(self):
+    def _build_agent(self) -> AgentExecutor:
         memory = ConversationBufferMemory(
             chat_memory=RedisChatMessageHistory(
-                session_id=f"chat:{self.user_id}", url=self.redis_url, ttl=200
+                session_id=f"chat:{self.user_id}",
+                url=self.redis_url,
+                ttl=SESSION_TTL_SECONDS,
             ),
             memory_key="chat_history",
             return_messages=True,
+            k=CONTEXT_WINDOW_LENGTH,
         )
 
-        llm = ChatOpenAI(temperature=0, openai_api_key=self.openai_api_key)
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                banking_assistant_prompt,
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
+
+        llm = ChatOpenAI(
+            temperature=0,
+            model=OPENAI_MODEL,
+            openai_api_key=OPENAI_API_KEY,
+        )
 
         tools = [answer_bank_faq]
 
-        return initialize_agent(
-            tools=tools,
+        agent = create_openai_functions_agent(
             llm=llm,
+            tools=tools,
+            prompt=prompt,
+        )
+
+        return AgentExecutor.from_agent_and_tools(
+            agent=agent,
+            tools=tools,
             memory=memory,
-            agent=AgentType.OPENAI_FUNCTIONS,
             verbose=True,
         )
 

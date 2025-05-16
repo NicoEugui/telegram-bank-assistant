@@ -1,24 +1,50 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import OPENAI_API_KEY, REDIS_HOST, REDIS_PORT
 from bot.agent.conversation_agent import ConversationAgent
+from bot.services.response_humanizer import ResponseHumanizer
 
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
-async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+
+async def handle_text_message(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     user_input = update.message.text
     user_id = str(update.effective_user.id)
 
-    agent = ConversationAgent(
-        user_id=user_id,
-        redis_url=f"redis://{REDIS_HOST}:{REDIS_PORT}",
-        openai_api_key=OPENAI_API_KEY,
-    )
+    if not user_input or not user_input.strip():
+        await update.message.reply_text(
+            "Disculpe, no entendí el mensaje. Podría repetirlo?"
+        )
+        return
+
+    logger.info(f"[User {user_id}] Input received: {user_input}")
+
+    agent = ConversationAgent(user_id=user_id)
 
     try:
-       response = agent.run(user_input)
+        raw_response = agent.run(user_input)
+        humanizer = ResponseHumanizer(raw_response)
+        parts = humanizer.rewrite()
+
+        response = None
+
+        for key in ["parte_1", "parte_2", "parte_3"]:
+            if parts.get(key):
+
+                response = await update.message.reply_text(parts[key])
+                await asyncio.sleep(1.2)
+
+        if response:
+            logger.info(f"[User {user_id}] Output sent: {parts}")
+        else:
+            logger.info(f"[User {user_id}] No output parts returned from humanizer.")
+
     except Exception as e:
         logger.exception(f"[Handler] Error processing message from {user_id}: {e}")
-        response = "Ocurrio un error, por favor intenta mas tarde"
-    await update.message.reply_text(response)
+        await update.message.reply_text(
+            "Ocurrio un error al procesar su consulta. Por favor, intente nuevamente mas tarde"
+        )

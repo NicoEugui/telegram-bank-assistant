@@ -8,12 +8,11 @@ FAQ = {
     "caja ahorro": "Podés abrir una caja de ahorro 100% online, sin costo de mantenimiento durante los primeros 6 meses.",
 }
 
+
 @tool
 def answer_bank_faq(question: str) -> str:
     """
-    Answers frequently asked questions (FAQs) about banking topics like cards, loans or interest rates.
     """
-  
 
     question = question.lower()
     for key, answer in FAQ.items():
