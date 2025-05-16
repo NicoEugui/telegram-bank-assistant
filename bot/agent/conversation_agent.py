@@ -4,7 +4,10 @@ from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from bot.prompts.system_prompts import banking_assistant_prompt
-from bot.tools.answer_bank_faq import answer_bank_faq
+from bot.tools.check_authentication import check_authentication
+from bot.tools.authenticate_user import authenticate_user
+from bot.tools.get_balance import get_balance
+
 from config import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -52,7 +55,7 @@ class ConversationAgent:
             openai_api_key=OPENAI_API_KEY,
         )
 
-        tools = [answer_bank_faq]
+        tools = [check_authentication, authenticate_user, get_balance]
 
         agent = create_openai_functions_agent(
             llm=llm,
@@ -68,5 +71,7 @@ class ConversationAgent:
         )
 
     def run(self, user_input: str) -> str:
-        result = self.agent.invoke({"input": user_input})
+
+        input_text = f"[user_id: {self.user_id}]\n Mensaje del usuario: {user_input}"
+        result = self.agent.invoke({"input": input_text})
         return result["output"]
