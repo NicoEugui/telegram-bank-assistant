@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from langchain.tools import tool
 from config import (
     REDIS_HOST,
@@ -10,7 +12,6 @@ from config import (
     TRANSACTION_MAX,
     TRANSACTION_COUNT_MIN,
     TRANSACTION_COUNT_MAX,
-    TRANSACTION_DATE,
     CREDIT_SCORE_MIN,
     CREDIT_SCORE_MAX,
     INCOME_MIN,
@@ -21,11 +22,10 @@ from config import (
     CREDIT_RISK_LEVELS,
 )
 
-import redis
 import random
 import json
+import redis
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,18 +49,35 @@ def authenticate_user(user_id: str, pin: str) -> dict:
         balance = round(random.uniform(INITIAL_BALANCE_MIN, INITIAL_BALANCE_MAX), 2)
         r.set(balance_key, balance)
 
-        transactions = [
-            {
-                "date": TRANSACTION_DATE,
-                "description": random.choice(
-                    ["Transfer", "Purchase", "Deposit", "Auto Debit"]
-                ),
-                "amount": round(random.uniform(TRANSACTION_MIN, TRANSACTION_MAX), 2),
-            }
-            for _ in range(random.randint(TRANSACTION_COUNT_MIN, TRANSACTION_COUNT_MAX))
-        ]
+        # generate transactions
+        transaction_templates = {
+            "ingreso": [
+                "Transferencia recibida",
+                "Depósito en efectivo",
+                "Reintegro de compra",
+            ],
+            "egreso": [
+                "Compra supermercado",
+                "Pago servicio UTE",
+                "Débito automático Spotify",
+                "Extracción en cajero",
+            ],
+        }
+
+        transactions = []
+        today = datetime.now()
+        for i in range(random.randint(TRANSACTION_COUNT_MIN, TRANSACTION_COUNT_MAX)):
+            tipo = random.choices(["egreso", "ingreso"], weights=[0.75, 0.25])[0]
+            desc = random.choice(transaction_templates[tipo])
+            amount = round(random.uniform(TRANSACTION_MIN, TRANSACTION_MAX), 2)
+            if tipo == "egreso":
+                amount = -amount
+            date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+            transactions.append({"date": date, "description": desc, "amount": amount})
+
         r.set(f"transactions:{user_id}", json.dumps(transactions))
 
+        # generate credit profile
         credit_profile = {
             "score": random.randint(CREDIT_SCORE_MIN, CREDIT_SCORE_MAX),
             "level": random.choice(CREDIT_LEVELS),

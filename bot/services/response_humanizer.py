@@ -33,7 +33,10 @@ class ResponseHumanizer:
                 en 3 partes, en caso de que suceda eso, deja las partes necesarias vacias. Cada parte tiene que tener un sentido por su cuenta y no debe cortarse a menos que
                 haya un punto o un simbulo que de por terminada la oracion. Asegurate de que cada una de las partes que devolves no termine en un punto ya que hace la conversacion
                 mas real. 
+
+                ## 4: Para el caso de saldos y movimientos mantiene el formato de la respuesta como viene, no lo modifiques.
                 
+                Evitá cortar texto relevante o dejar líneas vacías.
                 Devolveme:
                 
                 {
@@ -56,7 +59,7 @@ class ResponseHumanizer:
                 }
 
                 ## Importante:
-
+                - Es crucial que los signos de finalizacion los dejes ("!" y "?"). Pero los de apertura tanto de exlamacion como de interrogacion ("¡" y "¿") los elimines.
                 - No utilices formato Markdown como **negritas** ni _itálicas_ en tus respuestas. Respondé solo con texto plano
 
         """

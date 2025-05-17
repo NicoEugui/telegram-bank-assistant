@@ -7,6 +7,7 @@ from bot.prompts.system_prompts import banking_assistant_prompt
 from bot.tools.check_authentication import check_authentication
 from bot.tools.authenticate_user import authenticate_user
 from bot.tools.get_balance import get_balance
+from bot.tools.get_transactions import get_transactions
 
 from config import (
     OPENAI_API_KEY,
@@ -55,7 +56,7 @@ class ConversationAgent:
             openai_api_key=OPENAI_API_KEY,
         )
 
-        tools = [check_authentication, authenticate_user, get_balance]
+        tools = [check_authentication, authenticate_user, get_balance, get_transactions]
 
         agent = create_openai_functions_agent(
             llm=llm,
