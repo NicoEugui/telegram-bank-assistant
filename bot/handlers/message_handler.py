@@ -31,8 +31,8 @@ async def handle_text_message(
         parts = humanizer.rewrite()
 
         response = None
-
-        for key in ["parte_1", "parte_2", "parte_3"]:
+        # send each part of the response with a delay
+        for key in ["parte_1", "parte_2", "parte_3", "parte_4"]:
             if parts.get(key):
 
                 response = await update.message.reply_text(parts[key])

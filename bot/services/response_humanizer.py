@@ -34,7 +34,7 @@ class ResponseHumanizer:
                 haya un punto o un simbulo que de por terminada la oracion. Asegurate de que cada una de las partes que devolves no termine en un punto ya que hace la conversacion
                 mas real. 
 
-                ## 4: Para el caso de saldos y movimientos mantiene el formato de la respuesta como viene, no lo modifiques.
+                ## 4: Para el caso de saldos y movimientos mantiene el formato de la respuesta como viene, no lo modifiques, solo adapta la respuesta para que ajuste al JSON
                 
                 Evitá cortar texto relevante o dejar líneas vacías.
                 Devolveme:
@@ -42,7 +42,8 @@ class ResponseHumanizer:
                 {
                     "parte_1": "Texto de la primera parte",
                     "parte_2": "Texto de la segunda parte",
-                    "parte_3": "Texto de la tercera parte"
+                    "parte_3": "Texto de la tercera parte",
+                    "parte_4": "Texto de la cuarta parte"
                 }
 
                 Ejemplo 1:
@@ -54,8 +55,9 @@ class ResponseHumanizer:
                 Respondes:
                 {
                     "parte1": "Bienvenido a NicoBank!",
-                    "part_2": "En que puedo ayudarte hoy?",
-                    "part_3": ""
+                    "parte_2": "En que puedo ayudarte hoy?",
+                    "parte_3": "",
+                    "parte_4": ""
                 }
 
                 ## Importante:

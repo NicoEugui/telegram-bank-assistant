@@ -22,7 +22,7 @@ CONTEXT_WINDOW_LENGTH = 5
 AUTH_TTL_SECONDS = 3600
 PENDING_INTENT_TTL_SECONDS = 300
 
-# --- Balance and Transactions ---
+# --- Auth PIN ---
 PIN_CODE="1234"
 
 INITIAL_BALANCE_MIN = 25000
@@ -34,7 +34,7 @@ TRANSACTION_COUNT_MIN = 5
 TRANSACTION_COUNT_MAX = 10
 TRANSACTION_DATE = "2025-05-16"
 
-# Perfil crediticio
+# -- Credit Profile Simulation ---
 CREDIT_SCORE_MIN = 600
 CREDIT_SCORE_MAX = 850
 INCOME_MIN = 25000
@@ -44,3 +44,6 @@ DEBT_RATIO_MAX = 0.4
 
 CREDIT_LEVELS = ["high", "medium", "low"]
 CREDIT_RISK_LEVELS = ["low", "moderate", "high"]
+
+# --- Loans ---
+DEFAULT_LOAN_RATE = 22.0
