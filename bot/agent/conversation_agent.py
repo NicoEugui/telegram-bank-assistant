@@ -9,6 +9,7 @@ from bot.tools.authenticate_user import authenticate_user
 from bot.tools.get_balance import get_balance
 from bot.tools.get_transactions import get_transactions
 from bot.tools.loan_simulation import simulate_loan
+from bot.tools.get_loan_history import get_loan_history
 
 from config import (
     OPENAI_API_KEY,
@@ -23,7 +24,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
+"""
+This module defines the ConversationAgent class, which manages conversational interactions
+with a banking assistant using LangChain, OpenAI, and Redis for chat history.
+"""
 class ConversationAgent:
     def __init__(self, user_id: str):
         self.user_id = user_id
@@ -63,6 +67,7 @@ class ConversationAgent:
             get_balance,
             get_transactions,
             simulate_loan,
+            get_loan_history,
         ]
 
         agent = create_openai_functions_agent(

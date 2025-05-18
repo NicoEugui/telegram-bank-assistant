@@ -1,6 +1,7 @@
 from langchain.tools import tool
 from datetime import datetime
 from decimal import Decimal
+from bot.tools.check_authentication import check_authentication
 from config import REDIS_HOST, REDIS_PORT
 import redis
 import json
@@ -11,19 +12,24 @@ r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 @tool
 def get_transactions(user_id: str) -> str:
     """
-    Retrieve and format the user's last simulated banking transactions grouped by date.
-    The output includes emojis for visual clarity and mimics the layout of a homebanking app.
+    Devuelve los últimos movimientos simulados del usuario, agrupados por fecha.
+    El formato incluye emojis para representar ingresos y egresos, similar a una app de homebanking.
     """
+
+    auth_result = check_authentication(user_id)
+    if not auth_result.get("is_authenticated"):
+        return {"error": "Debe autenticarse para consultar sus movimientos"}
+
     transactions_key = f"transactions:{user_id}"
     raw_data = r.get(transactions_key)
 
     if raw_data is None:
-        return "No se encontraron movimientos en su cuenta. Por favor, autentíquese nuevamente."
+        return "No se encontraron movimientos en su cuenta. Por favor, autentiquese nuevamente"
 
     try:
         transactions = json.loads(raw_data)
     except json.JSONDecodeError:
-        return "Hubo un problema al procesar sus movimientos. Intente nuevamente más tarde."
+        return "Hubo un problema al procesar sus movimientos. Intente nuevamente más tarde"
 
     def format_amount_string(value: str) -> str:
         return (
@@ -47,7 +53,7 @@ def get_transactions(user_id: str) -> str:
             format_transaction_line(transaction)
         )
 
-    output_lines = ["🧾 Últimos movimientos:\n"]
+    output_lines = ["🧾 Utimos movimientos:\n"]
     for date in sorted(grouped_by_date.keys(), reverse=True)[:5]:
         output_lines.append(f"📅 {date}")
         output_lines.extend(grouped_by_date[date])

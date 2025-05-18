@@ -8,78 +8,100 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ResponseHumanizer:
     def __init__(self, raw_response: str):
+        self.raw_response = raw_response
+
         self.llm = ChatOpenAI(
             temperature=0.5,
             model=OPENAI_MODEL,
             openai_api_key=OPENAI_API_KEY,
         )
 
-        prompt_text = """
-                # Tenes 3 tareas a completar muy importantes
+        prompt_template = """
+            Tenes que humanizar una respuesta de asistente bancario y dividirla en partes conversacionales naturales.
 
-                ## 1: Tu primer y principal tarea es humanizar la conversacion, tené en cuenta que las respuestas que envien forman parte de una
-                conversacion con un usuario, por lo que priorizar la claridad y naturalidad. Por lo tanto las tareas que estan a continuacion son
-                puntos que vas a tener en cuenta para poder humanizar la conversacion convertiendola en un ida y vuelta natural y claro.
+            1. Humaniza la conversacion para que suene natural, clara y fluida.  
+            2. Eliminá los signos de apertura como "¡" y "¿", pero conservá los de cierre "!" y "?".  
+            3. Dividí el texto en hasta 4 partes llamadas parte_1, parte_2, parte_3 y parte_4.  
+            Cada parte debe ser una unidad de sentido. No cortes frases.  
+            Si no hay suficiente contenido, dejá vacías las partes que no se usen.
 
+            Si el contenido es una lista estructurada de movimientos o préstamos, aplicá estos formatos:
 
-                ## 2: En caso de que los contenga, elimina los signos de apertura tanto de exlamacion como de interrogacion ("¡" y "¿")
-                y deja los de cierre del siguiente texto: "{raw}". Es crucial que los signos de finalizacion los dejes ("!" y "?").
+            Para movimientos bancarios:
+            🧾 Últimos movimientos:
+            📅 [fecha]  
+            ⬆️ Ingreso · $ [monto]  
+            ⬇️ Egreso · $ [monto]
 
+            Para historial de préstamos simulados:
+            🧾 Historial de préstamos simulados:
+            Préstamo 1:  
+            💰 Monto: $ [monto]  
+            📆 Plazo: [meses] meses  
+            🧾 Cuota mensual: $ [cuota]  
+            🔢 Total a pagar: $ [total]  
+            📅 Fecha: [fecha]
 
-                ## 3: Con el fin de humanizar la conversacion y simular una conversacion entre personas, tenes que separar el siguiente mensaje: "{raw}",
-                sin dejar nada afuera, en 3 partes mas pequeñas. Tené en cuenta que es posible que el mensaje sea demasiado breve y no tengas que dividir especificamente
-                en 3 partes, en caso de que suceda eso, deja las partes necesarias vacias. Cada parte tiene que tener un sentido por su cuenta y no debe cortarse a menos que
-                haya un punto o un simbulo que de por terminada la oracion. Asegurate de que cada una de las partes que devolves no termine en un punto ya que hace la conversacion
-                mas real. 
+            Para simulación de préstamo individual:
+            🧾 Simulación de préstamo:
 
-                ## 4: Para el caso de saldos y movimientos mantiene el formato de la respuesta como viene, no lo modifiques, solo adapta la respuesta para que ajuste al JSON
-                
-                Evitá cortar texto relevante o dejar líneas vacías.
-                Devolveme:
-                
-                {
-                    "parte_1": "Texto de la primera parte",
-                    "parte_2": "Texto de la segunda parte",
-                    "parte_3": "Texto de la tercera parte",
-                    "parte_4": "Texto de la cuarta parte"
-                }
+            💰 Monto solicitado: $ [monto]  
+            📆 Plazo en meses: [meses]  
+            🧾 Valor cuota: $ [cuota]  
+            🔢 Total a pagar: $ [total]  
+            💸 Monto de intereses: $ [intereses]  
+            📅 Fecha de simulación: [fecha]
 
-                Ejemplo 1:
+            Para resumen de perfil crediticio:
 
-                Recibis:
+            📊 Resumen de perfil:
+    
+            🔍 Nivel crediticio: [level]  
+            💼 Ingresos mensuales estimados: $ [monthly_income]  
+            ⚠️ Riesgo de crédito: [risk]
 
-                "¡Bienvenido a NicoBank! ¿En que puedo ayudarte hoy?"
+            ⚠️ Si recibís una frase como:  
+            “Según su perfil, usted califica como cliente de riesgo moderado con ingresos mensuales estimados en $75,000”  
+            Debés convertirla a este formato, agregando el título:
 
-                Respondes:
-                {
-                    "parte1": "Bienvenido a NicoBank!",
-                    "parte_2": "En que puedo ayudarte hoy?",
-                    "parte_3": "",
-                    "parte_4": ""
-                }
+            📊 Resumen de perfil: 
 
-                ## Importante:
-                - Es crucial que los signos de finalizacion los dejes ("!" y "?"). Pero los de apertura tanto de exlamacion como de interrogacion ("¡" y "¿") los elimines.
-                - No utilices formato Markdown como **negritas** ni _itálicas_ en tus respuestas. Respondé solo con texto plano
+            [frase original]
 
+            Asegurate de usar salto de línea entre cada línea. No escribas todo seguido en una sola frase.
+
+            Respondé con un JSON válido así:
+            {
+            "parte_1": "...",
+            "parte_2": "...",
+            "parte_3": "...",
+            "parte_4": "..."
+            }
         """
-        prompt_text = prompt_text.replace("{raw}", raw_response)
 
         self.prompt = ChatPromptTemplate.from_messages(
-            [SystemMessage(content=prompt_text)]
+            [SystemMessage(content=prompt_template), ("human", "{raw_response}")]
         )
 
     def rewrite(self) -> dict:
-        chain = self.prompt | self.llm
-        response = chain.invoke({}).content
         try:
-            return json.loads(response)
-        except json.JSONDecodeError as e:
-            logger.exception(f"[Humanizer] JSON decoding failed: {e}")
+            chain = self.prompt | self.llm
+            response = chain.invoke({"raw_response": self.raw_response}).content
+            parsed = json.loads(response)
             return {
-                "parte_1": response,
+                "parte_1": parsed.get("parte_1", ""),
+                "parte_2": parsed.get("parte_2", ""),
+                "parte_3": parsed.get("parte_3", ""),
+                "parte_4": parsed.get("parte_4", ""),
+            }
+        except Exception as e:
+            logger.exception(f"[Humanizer] Failed to parse response: {e}")
+            return {
+                "parte_1": self.raw_response,
                 "parte_2": "",
-                "parte_3": ""
+                "parte_3": "",
+                "parte_4": "",
             }

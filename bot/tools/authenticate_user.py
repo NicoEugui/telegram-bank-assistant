@@ -2,7 +2,6 @@ from langchain.tools import tool
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-
 from config import (
     REDIS_HOST,
     REDIS_PORT,
@@ -37,9 +36,19 @@ r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 def authenticate_user(user_id: str, pin: str) -> dict:
     """
     Verifica si el PIN ingresado por el usuario es correcto y, en ese caso,
-    lo autentica y genera sus datos financieros simulados si aún no existen.
+    lo autentica y genera sus datos financieros simulados si aun no existen
     """
+
+    if not user_id or not isinstance(user_id, str):
+        logger.warning("[Auth] Missing or invalid user_id.")
+        return {"is_authenticated": False, "error": "invalid_user_id"}
+
+    if not pin or not isinstance(pin, str) or len(pin) != 4 or not pin.isdigit():
+        logger.warning(f"[Auth] Invalid PIN format for user {user_id}.")
+        return {"is_authenticated": False, "error": "invalid_pin_format"}
+
     if pin != PIN_CODE:
+        logger.warning(f"[Auth] Failed authentication attempt for user {user_id}.")
         return {"is_authenticated": False}
 
     r.setex(f"auth:{user_id}", AUTH_TTL_SECONDS, "true")
@@ -68,7 +77,7 @@ def authenticate_user(user_id: str, pin: str) -> dict:
         today = datetime.now()
         for i in range(random.randint(TRANSACTION_COUNT_MIN, TRANSACTION_COUNT_MAX)):
             type = random.choices(["egreso", "ingreso"], weights=[0.75, 0.25])[0]
-            desc = random.choice(templates[tipo])
+            desc = random.choice(templates[type])
             amount = round(Decimal(random.uniform(TRANSACTION_MIN, TRANSACTION_MAX)), 2)
             txns.append(
                 {
