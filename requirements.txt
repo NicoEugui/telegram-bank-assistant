@@ -6,3 +6,6 @@ langchain-community==0.3.24
 langchain-openai==0.3.16
 redis==5.0.1
 pytz
+pytest
+pytest-asyncio
+fakeredis[asyncio]
