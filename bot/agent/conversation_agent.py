@@ -5,6 +5,7 @@ from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+from bot.utils.time_helpers import get_greeting_by_hour
 from bot.prompts.system_prompts import banking_assistant_prompt
 from bot.tools.check_authentication import check_authentication
 from bot.tools.authenticate_user import authenticate_user
@@ -89,7 +90,8 @@ class ConversationAgent:
         Procesa la entrada del usuario y devuelve una respuesta generada por el agente.
         """
 
-        input_text = f"[user_id: {self.user_id}]\nMensaje del usuario: {user_input}"
+        greeting = get_greeting_by_hour()
+        input_text = f"[user_id: {self.user_id}]\nSaludo contextual: {greeting}\nMensaje del usuario: {user_input}"
         logger.info(f"[Agent] Input for {self.user_id}: {user_input}")
 
         try:
