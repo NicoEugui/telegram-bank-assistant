@@ -2,34 +2,37 @@ from langchain.tools import tool
 from datetime import datetime
 from decimal import Decimal
 from bot.tools.check_authentication import check_authentication
-from config import REDIS_HOST, REDIS_PORT
-import redis
-import json
+from bot.services.redis_service import redis_service
 
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @tool
-def get_transactions(user_id: str) -> str:
+async def get_transactions(user_id: str) -> str:
     """
     Devuelve los últimos movimientos simulados del usuario, agrupados por fecha.
     El formato incluye emojis para representar ingresos y egresos, similar a una app de homebanking.
     """
 
-    auth_result = check_authentication(user_id)
+    if not user_id or not isinstance(user_id, str):
+        return "Identificador de usuario invalido. Por favor, autentiquese nuevamente"
+
+    auth_result = await check_authentication.ainvoke({"user_id": user_id})
     if not auth_result.get("is_authenticated"):
-        return {"error": "Debe autenticarse para consultar sus movimientos"}
+        return "Debe autenticarse para consultar sus movimientosxs"
 
-    transactions_key = f"transactions:{user_id}"
-    raw_data = r.get(transactions_key)
-
-    if raw_data is None:
-        return "No se encontraron movimientos en su cuenta. Por favor, autentiquese nuevamente"
+    key = f"transactions:{user_id}"
 
     try:
-        transactions = json.loads(raw_data)
-    except json.JSONDecodeError:
-        return "Hubo un problema al procesar sus movimientos. Intente nuevamente más tarde"
+        transactions = await redis_service.get_json(key)
+    except Exception as e:
+        logger.exception(f"[Transactions] Redis error for user {user_id}: {e}")
+        return "Hubo un problema al acceder a sus movimientos. Intente nuevamente mas tarde"
+
+    if not transactions:
+        return "No se encontraron movimientos en su cuenta. Por favor, autentiquese nuevamente"
 
     def format_amount_string(value: str) -> str:
         return (
@@ -42,16 +45,22 @@ def get_transactions(user_id: str) -> str:
         emoji = "⬆️" if transaction.get("type") == "ingreso" else "⬇️"
         return f"{emoji} {transaction['description']} · {format_amount_string(transaction['amount'])}"
 
-    transactions.sort(key=lambda t: t["date"], reverse=True)
+    try:
+        transactions.sort(key=lambda t: t["date"], reverse=True)
+    except Exception as e:
+        logger.warning(f"[Transactions] Failed to sort transactions: {e}")
 
     grouped_by_date = {}
-    for transaction in transactions[:10]:
-        formatted_date = datetime.strptime(transaction["date"], "%Y-%m-%d").strftime(
-            "%d/%m/%Y"
-        )
-        grouped_by_date.setdefault(formatted_date, []).append(
-            format_transaction_line(transaction)
-        )
+    for txn in transactions[:10]:
+        try:
+            formatted_date = datetime.strptime(txn["date"], "%Y-%m-%d").strftime(
+                "%d/%m/%Y"
+            )
+            grouped_by_date.setdefault(formatted_date, []).append(
+                format_transaction_line(txn)
+            )
+        except Exception as e:
+            logger.warning(f"[Transactions] Failed to parse or group txn: {txn} - {e}")
 
     output_lines = ["🧾 Utimos movimientos:\n"]
     for date in sorted(grouped_by_date.keys(), reverse=True)[:5]:

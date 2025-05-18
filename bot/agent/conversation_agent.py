@@ -1,8 +1,10 @@
+import logging
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 from bot.prompts.system_prompts import banking_assistant_prompt
 from bot.tools.check_authentication import check_authentication
 from bot.tools.authenticate_user import authenticate_user
@@ -20,15 +22,14 @@ from config import (
     REDIS_PORT,
 )
 
-import logging
-
 logger = logging.getLogger(__name__)
 
-"""
-This module defines the ConversationAgent class, which manages conversational interactions
-with a banking assistant using LangChain, OpenAI, and Redis for chat history.
-"""
+
 class ConversationAgent:
+    """
+    Conversational agent for NicoBank using LangChain, Redis and OpenAI functions.
+    """
+
     def __init__(self, user_id: str):
         self.user_id = user_id
         self.redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}"
@@ -83,8 +84,20 @@ class ConversationAgent:
             verbose=True,
         )
 
-    def run(self, user_input: str) -> str:
+    async def run(self, user_input: str) -> str:
+        """
+        Procesa la entrada del usuario y devuelve una respuesta generada por el agente.
+        """
 
-        input_text = f"[user_id: {self.user_id}]\n Mensaje del usuario: {user_input}"
-        result = self.agent.invoke({"input": input_text})
-        return result["output"]
+        input_text = f"[user_id: {self.user_id}]\nMensaje del usuario: {user_input}"
+        logger.info(f"[Agent] Input for {self.user_id}: {user_input}")
+
+        try:
+            result = await self.agent.ainvoke({"input": input_text})
+            logger.info(f"[Agent] Output for {self.user_id}: {result['output']}")
+            return result["output"]
+        except Exception as e:
+            logger.exception(
+                f"[Agent] Error processing message for {self.user_id}: {e}"
+            )
+            return "Lo siento, ha ocurrido un error interno al procesar su consulta."

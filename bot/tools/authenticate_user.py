@@ -1,11 +1,13 @@
 from langchain.tools import tool
 from datetime import datetime, timedelta
 from decimal import Decimal
+from bot.services.redis_service import redis_service
+
+import random
+import json
+import logging
 
 from config import (
-    REDIS_HOST,
-    REDIS_PORT,
-    AUTH_TTL_SECONDS,
     PIN_CODE,
     INITIAL_BALANCE_MIN,
     INITIAL_BALANCE_MAX,
@@ -23,20 +25,15 @@ from config import (
     CREDIT_RISK_LEVELS,
 )
 
-import redis
-import random
-import json
-import logging
 
 logger = logging.getLogger(__name__)
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 
 @tool
-def authenticate_user(user_id: str, pin: str) -> dict:
+async def authenticate_user(user_id: str, pin: str) -> dict:
     """
     Verifica si el PIN ingresado por el usuario es correcto y, en ese caso,
-    lo autentica y genera sus datos financieros simulados si aun no existen
+    lo autentica y genera sus datos financieros simulados si aún no existen.
     """
 
     if not user_id or not isinstance(user_id, str):
@@ -51,13 +48,14 @@ def authenticate_user(user_id: str, pin: str) -> dict:
         logger.warning(f"[Auth] Failed authentication attempt for user {user_id}.")
         return {"is_authenticated": False}
 
-    r.setex(f"auth:{user_id}", AUTH_TTL_SECONDS, "true")
+    await redis_service.set_authenticated(user_id)
 
-    if not r.exists(f"balance:{user_id}"):
+    exists = await redis_service.exists(f"balance:{user_id}")
+    if not exists:
         balance = round(
             Decimal(random.uniform(INITIAL_BALANCE_MIN, INITIAL_BALANCE_MAX)), 2
         )
-        r.set(f"balance:{user_id}", str(balance))
+        await redis_service.set(f"balance:{user_id}", str(balance))
 
         templates = {
             "ingreso": [
@@ -87,7 +85,7 @@ def authenticate_user(user_id: str, pin: str) -> dict:
                     "amount": str(amount),
                 }
             )
-        r.set(f"transactions:{user_id}", json.dumps(txns))
+        await redis_service.set_json(f"transactions:{user_id}", txns)
 
         profile = {
             "score": random.randint(CREDIT_SCORE_MIN, CREDIT_SCORE_MAX),
@@ -98,7 +96,7 @@ def authenticate_user(user_id: str, pin: str) -> dict:
             ),
             "risk": random.choice(CREDIT_RISK_LEVELS),
         }
-        r.set(f"credit_profile:{user_id}", json.dumps(profile))
+        await redis_service.set_json(f"credit_profile:{user_id}", profile)
 
         logger.info(f"[Auth] User {user_id} authenticated.")
         logger.info(f"[Auth] Balance: {balance}")

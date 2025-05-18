@@ -8,6 +8,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+"""
+Module for humanizing and formatting assistant responses for a banking chatbot.
+This module uses OpenAI's language model to convert raw responses into a more
+human-readable format, breaking them into smaller conversational parts.
+"""
+
 
 class ResponseHumanizer:
     def __init__(self, raw_response: str):
