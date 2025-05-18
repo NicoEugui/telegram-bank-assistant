@@ -5,6 +5,7 @@ from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+
 from bot.utils.time_helpers import get_greeting_by_hour
 from bot.prompts.system_prompts import banking_assistant_prompt
 from bot.tools.check_authentication import check_authentication
@@ -13,6 +14,8 @@ from bot.tools.get_balance import get_balance
 from bot.tools.get_transactions import get_transactions
 from bot.tools.loan_simulation import simulate_loan
 from bot.tools.get_loan_history import get_loan_history
+from bot.services.redis_service import redis_service
+
 
 from config import (
     OPENAI_API_KEY,
@@ -90,12 +93,25 @@ class ConversationAgent:
         Procesa la entrada del usuario y devuelve una respuesta generada por el agente.
         """
 
+        await redis_service.increment_interaction_count(self.user_id)
+        interaction_count = await redis_service.get_interaction_count(self.user_id)
+
         greeting = get_greeting_by_hour()
-        input_text = f"[user_id: {self.user_id}]\nSaludo contextual: {greeting}\nMensaje del usuario: {user_input}"
+        input_text = (
+            f"[user_id: {self.user_id}]\n"
+            f"[interacción: {interaction_count}]\n"
+            f"[saludo: {greeting}]\n"
+            f"Mensaje del usuario: {user_input}"
+        )
+
         logger.info(f"[Agent] Input for {self.user_id}: {user_input}")
 
         try:
-            result = await self.agent.ainvoke({"input": input_text})
+            result = await self.agent.ainvoke(
+                {
+                    "input": input_text,
+                }
+            )
             logger.info(f"[Agent] Output for {self.user_id}: {result['output']}")
             return result["output"]
         except Exception as e:

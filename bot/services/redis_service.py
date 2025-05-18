@@ -36,6 +36,18 @@ class RedisService:
     async def clear_pending_intent(self, user_id: str):
         await self.client.delete(f"pending_intent:{user_id}")
 
+    # --- INTERACTION TRACKING ---
+
+    async def increment_interaction_count(self, user_id: str) -> int:
+        return await self.client.incr(f"interactions:{user_id}")
+
+    async def get_interaction_count(self, user_id: str) -> int:
+        value = await self.client.get(f"interactions:{user_id}")
+        return int(value) if value is not None else 0
+
+    async def reset_interaction_count(self, user_id: str):
+        await self.client.delete(f"interactions:{user_id}")
+
     # --- GENERIC OPERATIONS ---
 
     async def get(self, key: str):

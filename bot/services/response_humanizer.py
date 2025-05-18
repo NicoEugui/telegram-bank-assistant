@@ -5,6 +5,7 @@ from config import OPENAI_API_KEY, OPENAI_MODEL
 
 import json
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,15 @@ class ResponseHumanizer:
             💼 Ingresos mensuales estimados: $ [monthly_income]  
             ⚠️ Riesgo de crédito: [risk]
 
-            ⚠️ Si recibís una frase como:  
+            Para confirmaciones de simulación antes de ejecutar:
+
+            Si el mensaje incluye una confirmación como:
+            “Perfecto, para confirmar, usted quiere simular un préstamo con un monto de 344.000 pesos uruguayos y pagarlo en 14 meses. ¿Es correcto esto?”
+
+            Dividí el mensaje en partes lógicas
+            
+            Si recibís una frase como:  
+
             “Según su perfil, usted califica como cliente de riesgo moderado con ingresos mensuales estimados en $75,000”  
             Debés convertirla a este formato, agregando el título:
 
@@ -96,13 +105,20 @@ class ResponseHumanizer:
         try:
             chain = self.prompt | self.llm
             response = chain.invoke({"raw_response": self.raw_response}).content
-            parsed = json.loads(response)
+
+            # using regex to find the first JSON-like block
+            match = re.search(r"\{.*?\}", response, re.DOTALL)
+            if not match:
+                raise ValueError("No se encontró un bloque JSON en la respuesta")
+
+            parsed = json.loads(match.group(0))
             return {
                 "parte_1": parsed.get("parte_1", ""),
                 "parte_2": parsed.get("parte_2", ""),
                 "parte_3": parsed.get("parte_3", ""),
                 "parte_4": parsed.get("parte_4", ""),
             }
+
         except Exception as e:
             logger.exception(f"[Humanizer] Failed to parse response: {e}")
             return {
