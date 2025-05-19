@@ -142,9 +142,54 @@ Cliente de riesgo bajo con ingresos mensuales estimados en $45,000 y nivel credi
 
 ## Seguridad y Autenticación
 
-- Los usuarios deben ingresar un PIN válido antes de acceder a funciones sensibles.
-- Las herramientas `check_authentication` y `authenticate_user` verifican y persisten el estado de la sesión.
-- El estado de cada usuario se almacena en Redis con un TTL de 1 hora.
+La seguridad del usuario es prioritaria en NicoBank. Por ello, ciertas funcionalidades requieren autenticación previa mediante un PIN.
+
+### Flujo de autenticación
+
+- Al inicio de una conversación, el usuario puede interactuar libremente.
+- Si intenta acceder a funciones sensibles (consultar saldo, movimientos, historial de préstamos), se le solicitará un PIN.
+- Una vez ingresado y validado, se considera autenticado durante un período limitado.
+
+### Funciones que requieren PIN
+
+- `get_balance` – Consulta de saldo
+- `get_transactions` – Movimientos recientes
+- `get_loan_history` – Historial de préstamos simulados
+- `loan_simulator` – (si el perfil requiere autenticación previa)
+
+### PIN por defecto
+
+- El PIN por defecto es `1234`.
+- Puede cambiarse modificando la constante `PIN_CODE` dentro del archivo `config.py`.
+
+```python
+# config.py
+PIN_CODE = "1234"  # Puedes cambiarlo aquí
+```
+
+### Almacenamiento y validez
+
+- El estado de autenticación se persiste por usuario en Redis, usando la clave:
+`auth_state:{user_id}`
+- Cada sesión tiene un TTL (tiempo de expiración) de 1 hora.
+
+### Herramientas utilizadas
+
+`authenticate_user` → Valida el PIN y marca al usuario como autenticado.
+
+`check_authentication` → Verifica si el usuario ya se autenticó previamente.
+
+### Ejemplo de interacción
+
+```
+Usuario: Mostrame mis últimos movimientos
+
+Bot: Antes de poder mostrarte esa información, necesito que ingreses tu PIN.
+
+Usuario: 1234
+
+Bot: Autenticación exitosa. Ahora te muestro la información solicitada.
+```
 
 ## Pruebas
 
@@ -210,42 +255,45 @@ nicobank/
 ├── bot/                         # Código fuente del bot
 │   ├── agent/                   # Agente conversacional LangChain
 │   │   └── conversation_agent.py
-│   ├── handlers/                # Manejadores de mensajes Telegram
-│   │   ├── message_handler.py        # Texto
-│   │   ├── audio_handler.py          # Audios → texto
-│   │   └── global_error_handler.py   # Errores inesperados
-│   ├── services/                # Servicios externos
-│   │   ├── whisper_transcriber.py    # Transcripción con Whisper (OpenAI)
-│   │   └── telegram_api.py           # Interacción con API de Telegram (descarga de archivos, etc.)
-│   ├── tools/                   # Herramientas LangChain (funcionalidades bancarias)
+│   ├── handlers/                # Manejadores de mensajes de Telegram
+│   │   ├── message_handler.py        # Procesa mensajes de texto
+│   │   ├── audio_handler.py          # Procesa mensajes de voz (Whisper)
+│   │   └── global_error_handler.py   # Manejo global de errores
+│   ├── prompts/                 # Prompts base para el agente
+│   │   └── system_prompts.py         # Mensajes del sistema (rol IA)
+│   ├── services/                # Integraciones y lógica externa
+│   │   ├── interaction_tracker.py    # Cuenta interacciones por usuario
+│   │   ├── redis_service.py          # Wrapper de Redis para lectura/escritura
+│   │   ├── response_humanizer.py     # Mejora la naturalidad de respuestas
+│   │   └── whisper_transcriber.py    # Transcripción de voz con OpenAI Whisper
+│   ├── tools/                   # Herramientas LangChain (features del banco)
 │   │   ├── authenticate_user.py
 │   │   ├── check_authentication.py
 │   │   ├── get_balance.py
 │   │   ├── get_loan_history.py
 │   │   ├── get_transactions.py
-│   │   ├── loan_simulator.py
-│   ├── utils/                   # Utilidades internas
-│   │   ├── audio_converter.py        # Convierte .ogg a .wav con FFmpeg
-│   │   └── redis_utils.py            # Manejo de Redis
-├── tests/                       # Pruebas unitarias
-│   ├── tools/                        # Tests para cada tool LangChain
-│   ├── services/                     # Tests de servicios externos
+│   │   └── loan_simulator.py
+│   ├── utils/                   # Funciones auxiliares
+│   │   ├── audio_converter.py        # Conversión .ogg a .wav con FFmpeg
+│   │   └── time_helpers.py           # Formatos y utilidades de tiempo
+├── tests/                       # Suite de pruebas unitarias
+│   ├── tools/                        # Tests para cada herramienta
+│   ├── services/                     # Tests para módulos externos
 │   └── conftest.py                  # Fixtures globales de Pytest
-├── config.py                    # Carga y validación de variables de entorno
-├── main.py                      # Entry point del bot (polling de Telegram)
-├── Dockerfile                   # Imagen Docker del proyecto
-├── docker-compose-development.yml   # Compose para entorno dev
-├── docker-compose-production.yml    # Compose para entorno prod
-├── run_debug.sh                 # Script para reconstruir y lanzar en prod
-├── requirements.txt             # Dependencias de Python
-├── .env.example                 # Plantilla de entorno local
-├── .env.production.example      # Plantilla de entorno de producción
+├── config.py                    # Carga y validación de entornos
+├── main.py                      # Punto de entrada del bot
+├── Dockerfile                   # Instrucciones de build Docker
+├── docker-compose-development.yml   # Docker Compose para desarrollo
+├── docker-compose-production.yml    # Docker Compose para producción
+├── run_debug.sh                 # Script para ejecutar el bot en modo debug
+├── requirements.txt             # Dependencias Python
+├── .env.example                 # Variables de entorno local (ejemplo)
+├── .env.production.example      # Variables de entorno producción (ejemplo)
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # CI/CD vía GitHub Actions
+│       └── deploy.yml           # Workflow CI/CD con GitHub Actions
 ├── README.md                    # Documentación principal
-└── .gitignore                   # Exclusiones para Git
-
+└── .gitignore                   # Exclusiones de Git
 
 ```
 

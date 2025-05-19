@@ -8,6 +8,12 @@ APP_SERVICE="nicobank"
 echo "[⚙️] Stopping and removing containers, volumes and network..."
 docker-compose -f "$COMPOSE_FILE" down --volumes
 
+echo "[🧪] Running tests..."
+docker-compose -f "$COMPOSE_FILE" run --rm -e PYTHONPATH=/app $APP_SERVICE pytest -v --tb=short || {
+    echo "[❌] Tests failed. Aborting deployment."
+    exit 1
+}
+
 echo "[🔧] Building containers without cache..."
 docker-compose -f "$COMPOSE_FILE" build --no-cache
 
