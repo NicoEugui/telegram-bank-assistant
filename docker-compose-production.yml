@@ -1,0 +1,32 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: nicobank-redis-prod
+    ports:
+      - "6379:6379"
+    networks:
+      - nicobank-prod
+
+  nicobank:
+    build:
+      context: .
+    container_name: nicobank-app-prod
+    env_file:
+      - .env.production
+    environment:
+      - ENV=production
+    depends_on:
+      - redis
+    networks:
+      - nicobank-prod
+    command: python main.py
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  nicobank-prod:
+    driver: bridge

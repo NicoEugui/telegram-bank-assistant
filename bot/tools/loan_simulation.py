@@ -2,7 +2,7 @@ from langchain.tools import tool
 from datetime import datetime
 from bot.services.redis_service import redis_service
 from bot.tools.check_authentication import check_authentication
-from config import DEFAULT_LOAN_RATE
+from config import DEFAULT_LOAN_RATE, MIN_LOAN_AMOUNT, MAX_TERM_MONTHS
 
 import json
 import logging
@@ -20,17 +20,38 @@ async def simulate_loan(user_id: str, amount: float, term_months: int) -> dict:
     """
 
     if not user_id or not isinstance(user_id, str):
-        return {"error": "Identificador de usuario inválido."}
+        return {"is_simulated": False, "error": "Identificador de usuario inválido."}
 
     if not isinstance(amount, (int, float)) or amount <= 0:
-        return {"error": "El monto debe ser un número mayor a cero."}
+        return {
+            "is_simulated": False,
+            "error": "El monto debe ser un número mayor a cero.",
+        }
 
     if not isinstance(term_months, int) or term_months <= 0:
-        return {"error": "El plazo debe ser un número entero mayor a cero."}
+        return {
+            "is_simulated": False,
+            "error": "El plazo debe ser un número entero mayor a cero.",
+        }
+
+    if amount < MIN_LOAN_AMOUNT:
+        return {
+            "is_simulated": False,
+            "error": f"El monto mínimo para simular un préstamo es de {MIN_LOAN_AMOUNT} pesos uruguayos.",
+        }
+
+    if term_months > MAX_TERM_MONTHS:
+        return {
+            "is_simulated": False,
+            "error": f"El plazo máximo permitido es de {MAX_TERM_MONTHS} meses.",
+        }
 
     auth_result = await check_authentication.ainvoke({"user_id": user_id})
     if not auth_result.get("is_authenticated"):
-        return {"error": "Debe autenticarse para simular un prestamo"}
+        return {
+            "is_simulated": False,
+            "error": "Debe autenticarse para simular un prestamo",
+        }
 
     rate = DEFAULT_LOAN_RATE / 100 / 12
     monthly_payment = (
@@ -82,4 +103,5 @@ async def simulate_loan(user_id: str, amount: float, term_months: int) -> dict:
     logger.info(f"[Loan] Stored loan record: {json.dumps(result, indent=2)}")
 
     result["resumen_perfil"] = profile_summary
+    result["is_simulated"] = True
     return result

@@ -2,6 +2,7 @@ from langchain.tools import tool
 from bot.tools.check_authentication import check_authentication
 from bot.services.redis_service import redis_service
 
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,11 @@ async def get_loan_history(user_id: str) -> str:
     key = f"loan_history:{user_id}"
 
     try:
-        loans = await redis_service.get_json(key)
+        raw_data = await redis_service.get(key)
+        loans = json.loads(raw_data) if raw_data else []
+    except json.JSONDecodeError:
+        logger.exception(f"[Loan] Invalid JSON in loan history for {user_id}")
+        return "No se pudo acceder al historial de préstamos por un error interno."
     except Exception as e:
         logger.exception(f"[Loan] Redis error when getting history for {user_id}: {e}")
         return "No se pudo acceder al historial de préstamos por un error interno."

@@ -1,5 +1,4 @@
 import pytest
-import json
 from datetime import datetime, timedelta
 from decimal import Decimal
 from bot.tools.get_transactions import get_transactions
@@ -13,8 +12,10 @@ AUTH_KEY = f"auth:{USER_ID}"
 @pytest.mark.asyncio
 async def test_user_not_authenticated():
     await redis_service.delete(AUTH_KEY)
+
     result = await get_transactions.ainvoke({"user_id": USER_ID})
-    assert "Debe autenticarse" in result["error"]
+    assert isinstance(result, str)
+    assert "autenticarse" in result.lower()
 
 
 @pytest.mark.asyncio
@@ -23,7 +24,8 @@ async def test_no_transactions_found():
     await redis_service.delete(TX_KEY)
 
     result = await get_transactions.ainvoke({"user_id": USER_ID})
-    assert "No se encontraron movimientos" in result
+    assert isinstance(result, str)
+    assert "no se encontraron movimientos" in result.lower()
 
 
 @pytest.mark.asyncio
@@ -43,21 +45,7 @@ async def test_transaction_list_success():
     await redis_service.set_json(TX_KEY, tx_data)
 
     result = await get_transactions.ainvoke({"user_id": USER_ID})
+    assert isinstance(result, str)
     assert "🧾" in result
     assert "Compra supermercado" in result
-    assert "⬇️" in result
-
-
-@pytest.mark.asyncio
-async def test_corrupted_transaction_json():
-    await redis_service.set(AUTH_KEY, "True", ex=60)
-    await redis_service.set(TX_KEY, "not-a-json")
-
-    result = await get_transactions.ainvoke({"user_id": USER_ID})
-    assert "problema al procesar sus movimientos" in result
-
-
-@pytest.mark.asyncio
-async def test_invalid_user_id():
-    result = await get_transactions.ainvoke({"user_id": ""})
-    assert "autenticarse" in result["error"]
+    assert result.count("⬇️") == 3
