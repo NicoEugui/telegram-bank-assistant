@@ -237,6 +237,7 @@ echo "[🔍] Showing live logs from app service: $APP_SERVICE"
 docker-compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE"
 ```
 
+
 Para usarlo:
 1. Haz el script ejecutable: `chmod +x run_debug.sh`
 2. Ejecútalo: `./run_debug.sh`
