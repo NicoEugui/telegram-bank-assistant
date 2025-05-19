@@ -62,7 +62,7 @@ jobs:
             git pull origin main
 
             echo "[Build] Building and restarting production..."
-            docker compose -f docker-compose-production.yml up -d --build
+            docker-compose -f docker-compose-production.yml up -d --build
 
             echo "[Logs] Showing app logs..."
-            docker compose -f docker-compose-production.yml logs -f nicobank
+            docker-compose -f docker-compose-production.yml logs -f nicobank
