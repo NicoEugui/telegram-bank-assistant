@@ -64,5 +64,5 @@ jobs:
             echo "[Build] Building and restarting production..."
             docker-compose -f docker-compose-production.yml up -d --build
 
-            echo "[Logs] Showing app logs..."
-            docker-compose -f docker-compose-production.yml logs -f nicobank
+            echo "[Logs] Showing last 50 lines..."
+            docker-compose -f docker-compose-production.yml logs --tail=50 nicobank
