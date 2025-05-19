@@ -23,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -61,11 +61,14 @@ jobs:
             echo "[Deploy] Pulling latest changes..."
             git pull origin main
 
-            echo "[Build] Rebuilding containers without cache..."
+            echo "[Docker] Stopping and removing existing containers..."
+            docker-compose -f docker-compose-production.yml down --remove-orphans
+
+            echo "[Docker] Building fresh images..."
             docker-compose -f docker-compose-production.yml build --no-cache
 
-            echo "[Run] Restarting application in detached mode..."
-            docker-compose -f docker-compose-production.yml up -d
+            echo "[Docker] Starting containers..."
+            docker-compose -f docker-compose-production.yml up -d --force-recreate
 
-            echo "[Logs] Showing last 50 lines of app logs..."
-            docker-compose -f docker-compose-production.yml logs --tail=50 nicobank
+            echo "[Logs] Showing last 50 lines..."
+            docker-compose -f docker-compose-production.yml logs --tail=50
