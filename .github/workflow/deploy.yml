@@ -1,0 +1,54 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run tests before deploy
+    runs-on: ubuntu-latest
+    env:
+      ENV: production
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest -v
+
+  deploy:
+    name: Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/${{ secrets.PROD_USER }}/telegram-bank-assistant
+
+            echo "[Deploy] Pulling latest changes from main..."
+            git pull origin main
+
+            echo "[Deploy] Building and restarting production..."
+            docker compose -f docker-compose-production.yml up -d --build
+
+            echo "[Deploy] Showing logs..."
+            docker compose -f docker-compose-production.yml logs -f

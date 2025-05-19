@@ -13,7 +13,7 @@ MOCK_LOANS = [
         "valor_cuota": 4500.0,
         "total_a_pagar": 54000.0,
         "monto_de_intereses": 4000.0,
-        "fecha_de_simulacion": "2025-05-01"
+        "fecha_de_simulacion": "2025-05-01",
     },
     {
         "monto_solicitado": 30000.0,
@@ -21,7 +21,7 @@ MOCK_LOANS = [
         "valor_cuota": 5300.0,
         "total_a_pagar": 31800.0,
         "monto_de_intereses": 1800.0,
-        "fecha_de_simulacion": "2025-05-02"
+        "fecha_de_simulacion": "2025-05-02",
     },
     {
         "monto_solicitado": 100000.0,
@@ -29,7 +29,7 @@ MOCK_LOANS = [
         "valor_cuota": 4800.0,
         "total_a_pagar": 115200.0,
         "monto_de_intereses": 15200.0,
-        "fecha_de_simulacion": "2025-05-03"
+        "fecha_de_simulacion": "2025-05-03",
     },
     {
         # this one should be ignored in the test
@@ -38,7 +38,7 @@ MOCK_LOANS = [
         "valor_cuota": 5100.0,
         "total_a_pagar": 20400.0,
         "monto_de_intereses": 400.0,
-        "fecha_de_simulacion": "2025-05-04"
+        "fecha_de_simulacion": "2025-05-04",
     },
 ]
 
@@ -47,6 +47,7 @@ MOCK_LOANS = [
 async def test_requires_authentication():
     await redis_service.clear_authenticated(USER_ID)
     result = await get_loan_history.ainvoke({"user_id": USER_ID})
+    assert isinstance(result, str)
     assert "autentique" in result.lower()
 
 
@@ -55,6 +56,7 @@ async def test_no_loan_history_returns_fallback():
     await redis_service.set_authenticated(USER_ID)
     await redis_service.delete(LOAN_KEY)
     result = await get_loan_history.ainvoke({"user_id": USER_ID})
+    assert isinstance(result, str)
     assert "no se encontraron préstamos" in result.lower()
 
 
@@ -63,21 +65,20 @@ async def test_returns_latest_three_loans_formatted():
     await redis_service.set_authenticated(USER_ID)
     await redis_service.set_json(LOAN_KEY, MOCK_LOANS)
 
-    response = await get_loan_history.ainvoke({"user_id": USER_ID})
+    result = await get_loan_history.ainvoke({"user_id": USER_ID})
 
-    # it should contain the header
-    assert "🧾 Historial de prestamos simulados" in response
-    assert "Prestamo 1" in response
-    assert "💰 Monto" in response
-    assert "📅 Fecha de simulacion" in response
-
-    # the first three loans should be included
-    assert response.count("Prestamo") == 3
+    assert isinstance(result, str)
+    assert "🧾 historial de prestamos simulados" in result.lower()
+    assert result.count("Prestamo") == 3
+    assert "💰 Monto" in result
+    assert "📅 Fecha de simulación" in result
 
 
 @pytest.mark.asyncio
 async def test_handles_invalid_json():
     await redis_service.set_authenticated(USER_ID)
     await redis_service.set(LOAN_KEY, "not-a-json")
+
     result = await get_loan_history.ainvoke({"user_id": USER_ID})
+    assert isinstance(result, str)
     assert "error interno" in result.lower()

@@ -3,7 +3,6 @@ from datetime import datetime
 from decimal import Decimal
 from bot.tools.check_authentication import check_authentication
 from bot.services.redis_service import redis_service
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ async def get_transactions(user_id: str) -> str:
 
     auth_result = await check_authentication.ainvoke({"user_id": user_id})
     if not auth_result.get("is_authenticated"):
-        return "Debe autenticarse para consultar sus movimientosxs"
+        return "Debe autenticarse para consultar sus movimientos"
 
     key = f"transactions:{user_id}"
 
@@ -29,10 +28,10 @@ async def get_transactions(user_id: str) -> str:
         transactions = await redis_service.get_json(key)
     except Exception as e:
         logger.exception(f"[Transactions] Redis error for user {user_id}: {e}")
-        return "Hubo un problema al acceder a sus movimientos. Intente nuevamente mas tarde"
+        return "Hubo un problema al procesar sus movimientos"
 
     if not transactions:
-        return "No se encontraron movimientos en su cuenta. Por favor, autentiquese nuevamente"
+        return "No se encontraron movimientos en su cuenta"
 
     def format_amount_string(value: str) -> str:
         return (

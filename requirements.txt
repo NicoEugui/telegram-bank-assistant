@@ -8,4 +8,5 @@ redis==5.0.1
 pytz
 pytest
 pytest-asyncio
-fakeredis[asyncio]
+pytest-cov
+
