@@ -100,12 +100,12 @@ REDIS_PORT=6379
 
 ## Entornos
 
-| Modo | Archivo | Docker Compose | Uso |
-|------|---------|----------------|-----|
-| Desarrollo | .env | docker-compose-development.yml | Desarrollo local en tu máquina |
-| Producción | .env.production | docker-compose-production.yml | Despliegue remoto, CI/CD |
+| Modo       | Archivo         | Docker Compose                 | Uso                            |
+| ---------- | --------------- | ------------------------------ | ------------------------------ |
+| Desarrollo | .env            | docker-compose-development.yml | Desarrollo local en tu máquina |
+| Producción | .env.production | docker-compose-production.yml  | Despliegue remoto, CI/CD       |
 
-Todos los entornos se manejan a través de config.py, que valida ENV y carga el archivo .env.* apropiado.
+Todos los entornos se manejan a través de config.py, que valida ENV y carga el archivo .env.\* apropiado.
 
 ## Capacidades de Conversación
 
@@ -125,7 +125,6 @@ Los usuarios pueden enviar audios (formato .ogg desde Telegram). El asistente co
 Ejemplo:
 
 - (Audio): "¿Cuánto tengo en la cuenta?" → 🧠 Procesado como texto → 💬 "Su saldo actual es de..."
-
 
 ### Ejemplo de Salida de Simulación de Préstamo
 
@@ -179,6 +178,7 @@ Luego usa el script run_debug.sh:
 ```
 
 Este script realizará:
+
 1. Detener y eliminar contenedores, volúmenes y red existentes
 2. Construir contenedores sin usar caché
 3. Iniciar contenedores en modo desacoplado
@@ -196,11 +196,11 @@ O activa el pipeline CI/CD mediante push a main.
 
 Secretos utilizados:
 
-| Nombre | Descripción |
-|--------|-------------|
-| PROD_HOST | IP de tu VM |
-| PROD_USER | Nombre de usuario SSH |
-| PROD_SSH_KEY | Clave SSH privada |
+| Nombre       | Descripción           |
+| ------------ | --------------------- |
+| PROD_HOST    | IP de tu VM           |
+| PROD_USER    | Nombre de usuario SSH |
+| PROD_SSH_KEY | Clave SSH privada     |
 
 ## Estructura del Proyecto
 
@@ -208,43 +208,44 @@ Secretos utilizados:
 .
 nicobank/
 ├── bot/                         # Código fuente del bot
-│   ├── agent/                   # Agente LangChain y configuración
+│   ├── agent/                   # Agente conversacional LangChain
 │   │   └── conversation_agent.py
-│   ├── handlers/                # Manejadores de mensajes
-│   │   ├── message_handler.py
-│   │   ├── audio_handler.py
-│   │   └── global_error_handler.py
-│   ├── services/                # Integraciones externas
-│   │   ├── whisper_transcriber.py
-│   │   └── telegram_api.py
-│   ├── tools/                   # Tools LangChain
+│   ├── handlers/                # Manejadores de mensajes Telegram
+│   │   ├── message_handler.py        # Texto
+│   │   ├── audio_handler.py          # Audios → texto
+│   │   └── global_error_handler.py   # Errores inesperados
+│   ├── services/                # Servicios externos
+│   │   ├── whisper_transcriber.py    # Transcripción con Whisper (OpenAI)
+│   │   └── telegram_api.py           # Interacción con API de Telegram (descarga de archivos, etc.)
+│   ├── tools/                   # Herramientas LangChain (funcionalidades bancarias)
 │   │   ├── authenticate_user.py
 │   │   ├── check_authentication.py
 │   │   ├── get_balance.py
 │   │   ├── get_loan_history.py
 │   │   ├── get_transactions.py
 │   │   ├── loan_simulator.py
-│   ├── utils/                   # Funciones utilitarias
-│        ├── audio_converter.py
-│        └── redis_utils.py
+│   ├── utils/                   # Utilidades internas
+│   │   ├── audio_converter.py        # Convierte .ogg a .wav con FFmpeg
+│   │   └── redis_utils.py            # Manejo de Redis
 ├── tests/                       # Pruebas unitarias
-│   ├── tools/
-│   ├── services/
-│   └── conftest.py              # Fixtures de testing
-├── config.py                    # Configuración dinámica de entornos
-├── main.py                      # Punto de entrada del bot
-├── Dockerfile                   # Dockerfile para el contenedor
-├── docker-compose-development.yml
-├── docker-compose-production.yml
-├── run_debug.sh                 # Script de ejecución local en producción
-├── requirements.txt             # Dependencias Python
-├── .env.example                 # Plantilla de variables de entorno local
+│   ├── tools/                        # Tests para cada tool LangChain
+│   ├── services/                     # Tests de servicios externos
+│   └── conftest.py                  # Fixtures globales de Pytest
+├── config.py                    # Carga y validación de variables de entorno
+├── main.py                      # Entry point del bot (polling de Telegram)
+├── Dockerfile                   # Imagen Docker del proyecto
+├── docker-compose-development.yml   # Compose para entorno dev
+├── docker-compose-production.yml    # Compose para entorno prod
+├── run_debug.sh                 # Script para reconstruir y lanzar en prod
+├── requirements.txt             # Dependencias de Python
+├── .env.example                 # Plantilla de entorno local
 ├── .env.production.example      # Plantilla de entorno de producción
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # CI/CD con GitHub Actions
-├── README.md                    # Documentación principal del proyecto
-└── .gitignore
+│       └── deploy.yml           # CI/CD vía GitHub Actions
+├── README.md                    # Documentación principal
+└── .gitignore                   # Exclusiones para Git
+
 
 ```
 
@@ -278,7 +279,7 @@ echo "[🔍] Showing live logs from app service: $APP_SERVICE"
 docker-compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE"
 ```
 
-
 Para usarlo:
+
 1. Haz el script ejecutable: `chmod +x run_debug.sh`
 2. Ejecútalo: `./run_debug.sh`

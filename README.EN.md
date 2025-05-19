@@ -100,12 +100,12 @@ REDIS_PORT=6379
 
 ## Environments
 
-| Mode | File | Docker Compose | Use |
-|------|------|----------------|-----|
-| Development | .env | docker-compose-development.yml | Local development on your machine |
-| Production | .env.production | docker-compose-production.yml | Remote deploy to VM, CI/CD |
+| Mode        | File            | Docker Compose                 | Use                               |
+| ----------- | --------------- | ------------------------------ | --------------------------------- |
+| Development | .env            | docker-compose-development.yml | Local development on your machine |
+| Production  | .env.production | docker-compose-production.yml  | Remote deploy to VM, CI/CD        |
 
-All environments are handled via config.py, which validates ENV and loads the appropriate .env.* file.
+All environments are handled via config.py, which validates ENV and loads the appropriate .env.\* file.
 
 ## Conversation Capabilities
 
@@ -125,7 +125,6 @@ Users can send voice messages (OGG format from Telegram). The assistant converts
 Example:
 
 - (Audio): "How much money do I have?" → 🧠 Processed as text → 💬 "Your current balance is..."
-
 
 ### Loan Simulation Output Example
 
@@ -179,6 +178,7 @@ Then use the run_debug.sh script:
 ```
 
 This script will:
+
 1. Stop and remove existing containers, volumes, and network
 2. Build containers without using cache
 3. Start containers in detached mode
@@ -196,10 +196,10 @@ Or trigger the CI/CD pipeline via push to main.
 
 Secrets used:
 
-| Name | Description |
-|------|-------------|
-| PROD_HOST | IP of your VM |
-| PROD_USER | SSH username |
+| Name         | Description     |
+| ------------ | --------------- |
+| PROD_HOST    | IP of your VM   |
+| PROD_USER    | SSH username    |
 | PROD_SSH_KEY | Private SSH key |
 
 ## Project Structure
@@ -208,43 +208,43 @@ Secrets used:
 .
 nicobank/
 ├── bot/                         # Bot source code
-│   ├── agent/                   # LangChain agent and configuration
+│   ├── agent/                   # LangChain conversational agent
 │   │   └── conversation_agent.py
 │   ├── handlers/                # Telegram message handlers
-│   │   ├── message_handler.py        # Handles text messages
-│   │   ├── audio_handler.py          # Handles incoming voice messages
-│   │   └── global_error_handler.py   # Catches and logs unexpected exceptions
+│   │   ├── message_handler.py        # Handles text input
+│   │   ├── audio_handler.py          # Converts voice messages to text
+│   │   └── global_error_handler.py   # Logs and handles unexpected exceptions
 │   ├── services/                # External service integrations
-│   │   ├── whisper_transcriber.py    # OpenAI Whisper audio transcription
+│   │   ├── whisper_transcriber.py    # OpenAI Whisper integration
 │   │   └── telegram_api.py           # Telegram API helpers (file download, etc.)
-│   ├── tools/                   # LangChain tools (banking functionalities)
+│   ├── tools/                   # LangChain tools (banking features)
 │   │   ├── authenticate_user.py
 │   │   ├── check_authentication.py
 │   │   ├── get_balance.py
 │   │   ├── get_loan_history.py
 │   │   ├── get_transactions.py
 │   │   ├── loan_simulator.py
-│   ├── utils/                   # Internal utilities
+│   ├── utils/                   # Utility functions
 │   │   ├── audio_converter.py        # Converts .ogg to .wav using FFmpeg
-│   │   └── redis_utils.py            # Handles Redis read/write operations
+│   │   └── redis_utils.py            # Redis read/write abstraction
 ├── tests/                       # Unit test suite
 │   ├── tools/                        # Tests for each LangChain tool
-│   ├── services/                     # Tests for external service modules
-│   └── conftest.py                  # Global Pytest fixtures
+│   ├── services/                     # Tests for service modules
+│   └── conftest.py                  # Global fixtures for Pytest
 ├── config.py                    # Loads and validates environment settings
 ├── main.py                      # Bot entrypoint for Telegram polling
 ├── Dockerfile                   # Build instructions for Docker image
-├── docker-compose-development.yml   # Docker Compose config for dev
+├── docker-compose-development.yml   # Docker Compose config for development
 ├── docker-compose-production.yml    # Docker Compose config for production
-├── run_debug.sh                 # Local script for rebuilding and running production
-├── requirements.txt             # Python package dependencies
-├── .env.example                 # Example local environment file
-├── .env.production.example      # Example production environment file
+├── run_debug.sh                 # Shell script to rebuild and run app in prod
+├── requirements.txt             # Python dependencies
+├── .env.example                 # Local environment template
+├── .env.production.example      # Production environment template
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # CI/CD pipeline via GitHub Actions
+│       └── deploy.yml           # GitHub Actions workflow (CI/CD)
 ├── README.md                    # Main project documentation
-└── .gitignore                   # Files/directories ignored by Git
+└── .gitignore                   # Git exclusions
 
 ```
 
@@ -279,5 +279,6 @@ docker-compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE"
 ```
 
 To use it:
+
 1. Make the script executable: `chmod +x run_debug.sh`
 2. Run it: `./run_debug.sh`
