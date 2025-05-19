@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENV: production
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -25,10 +31,13 @@ jobs:
       - name: Create temporary .env.production for CI
         run: |
           echo "ENV=production" > .env.production
-          echo "TELEGRAM_BOT_TOKEN=dummy" >> .env.production
-          echo "OPENAI_API_KEY=dummy" >> .env.production
+          echo "TELEGRAM_BOT_TOKEN=fake" >> .env.production
+          echo "OPENAI_API_KEY=fake" >> .env.production
           echo "REDIS_HOST=localhost" >> .env.production
           echo "REDIS_PORT=6379" >> .env.production
+
+      - name: Run pytest
+        run: pytest -v
 
   deploy:
     name: Deploy to Production
@@ -49,11 +58,11 @@ jobs:
           script: |
             cd /home/${{ secrets.PROD_USER }}/telegram-bank-assistant
 
-            echo "[Deploy] Pulling latest changes from main..."
+            echo "[Deploy] Pulling latest changes..."
             git pull origin main
 
-            echo "[Deploy] Building and restarting production..."
+            echo "[Build] Building and restarting production..."
             docker compose -f docker-compose-production.yml up -d --build
 
-            echo "[Deploy] Showing logs..."
-            docker compose -f docker-compose-production.yml logs -f
+            echo "[Logs] Showing app logs..."
+            docker compose -f docker-compose-production.yml logs -f nicobank
