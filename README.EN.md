@@ -22,6 +22,7 @@ This bot runs on Telegram and is powered by OpenAI + LangChain, with support for
 ## Features
 
 - Natural language banking assistant (in Spanish)
+- Voice input support: converts audio to text using OpenAI Whisper
 - Secure PIN-based authentication
 - Balance and transaction queries
 - Loan simulation with dynamic interest rates and profiles
@@ -55,6 +56,8 @@ Tools are Python functions exposed as LangChain @tools.
 - Python 3.10
 - LangChain
 - OpenAI GPT-4o
+- FFmpeg for audio conversion
+- Whisper (OpenAI) for voice-to-text transcription
 - Redis (async + persistence)
 - Docker & Docker Compose
 - GitHub Actions (CI/CD)
@@ -114,6 +117,15 @@ Examples the bot understands:
 - "¿Cuánto pagaría si pido 100000 en 24 cuotas?"
 - "¿Qué tarjetas ofrecen?"
 - "¿Dónde están ubicadas las sucursales?"
+
+### Voice Input
+
+Users can send voice messages (OGG format from Telegram). The assistant converts these audio files into text using Whisper (OpenAI) and replies as if the user had typed that message.
+
+Example:
+
+- (Audio): "How much money do I have?" → 🧠 Processed as text → 💬 "Your current balance is..."
+
 
 ### Loan Simulation Output Example
 
@@ -194,17 +206,46 @@ Secrets used:
 
 ```
 .
-├── bot/                    # Main agent logic, tools and handlers
-├── tests/                  # Pytest-based test suite
-├── config.py               # Environment management and validation
-├── main.py                 # Bot entrypoint
-├── Dockerfile              # Docker build definition
-├── run_debug.sh            # Script for running in debug mode
-├── docker-compose-development.yml
-├── docker-compose-production.yml
-├── .env.example
-├── .env.production.example
-├── .github/workflows/     # GitHub Actions CI/CD
+nicobank/
+├── bot/                         # Bot source code
+│   ├── agent/                   # LangChain agent and configuration
+│   │   └── conversation_agent.py
+│   ├── handlers/                # Telegram message handlers
+│   │   ├── message_handler.py        # Handles text messages
+│   │   ├── audio_handler.py          # Handles incoming voice messages
+│   │   └── global_error_handler.py   # Catches and logs unexpected exceptions
+│   ├── services/                # External service integrations
+│   │   ├── whisper_transcriber.py    # OpenAI Whisper audio transcription
+│   │   └── telegram_api.py           # Telegram API helpers (file download, etc.)
+│   ├── tools/                   # LangChain tools (banking functionalities)
+│   │   ├── authenticate_user.py
+│   │   ├── check_authentication.py
+│   │   ├── get_balance.py
+│   │   ├── get_loan_history.py
+│   │   ├── get_transactions.py
+│   │   ├── loan_simulator.py
+│   ├── utils/                   # Internal utilities
+│   │   ├── audio_converter.py        # Converts .ogg to .wav using FFmpeg
+│   │   └── redis_utils.py            # Handles Redis read/write operations
+├── tests/                       # Unit test suite
+│   ├── tools/                        # Tests for each LangChain tool
+│   ├── services/                     # Tests for external service modules
+│   └── conftest.py                  # Global Pytest fixtures
+├── config.py                    # Loads and validates environment settings
+├── main.py                      # Bot entrypoint for Telegram polling
+├── Dockerfile                   # Build instructions for Docker image
+├── docker-compose-development.yml   # Docker Compose config for dev
+├── docker-compose-production.yml    # Docker Compose config for production
+├── run_debug.sh                 # Local script for rebuilding and running production
+├── requirements.txt             # Python package dependencies
+├── .env.example                 # Example local environment file
+├── .env.production.example      # Example production environment file
+├── .github/
+│   └── workflows/
+│       └── deploy.yml           # CI/CD pipeline via GitHub Actions
+├── README.md                    # Main project documentation
+└── .gitignore                   # Files/directories ignored by Git
+
 ```
 
 ## Scripts

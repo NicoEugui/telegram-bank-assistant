@@ -22,6 +22,7 @@ Este bot funciona en Telegram y está impulsado por OpenAI + LangChain, con sopo
 ## Características
 
 - Asistente bancario de lenguaje natural (en español)
+- Soporte para entrada de voz: convierte audios en texto usando Whisper de OpenAI
 - Autenticación segura basada en PIN
 - Consultas de saldo y transacciones
 - Simulación de préstamos con tasas de interés dinámicas y perfiles
@@ -55,6 +56,8 @@ Las herramientas son funciones Python expuestas como @tools de LangChain.
 - Python 3.10
 - LangChain
 - OpenAI GPT-4o
+- FFmpeg para conversión de audios
+- Whisper (OpenAI) para transcripción de voz a texto
 - Redis (asíncrono + persistencia)
 - Docker y Docker Compose
 - GitHub Actions (CI/CD)
@@ -114,6 +117,15 @@ Ejemplos que el bot entiende:
 - "¿Cuánto pagaría si pido 100000 en 24 cuotas?"
 - "¿Qué tarjetas ofrecen?"
 - "¿Dónde están ubicadas las sucursales?"
+
+### Entrada por Voz
+
+Los usuarios pueden enviar audios (formato .ogg desde Telegram). El asistente convierte estos audios en texto usando Whisper (OpenAI) y responde como si hubieran escrito ese mensaje.
+
+Ejemplo:
+
+- (Audio): "¿Cuánto tengo en la cuenta?" → 🧠 Procesado como texto → 💬 "Su saldo actual es de..."
+
 
 ### Ejemplo de Salida de Simulación de Préstamo
 
@@ -194,17 +206,46 @@ Secretos utilizados:
 
 ```
 .
-├── bot/                    # Lógica principal del agente, herramientas y manejadores
-├── tests/                  # Suite de pruebas basadas en Pytest
-├── config.py               # Gestión y validación de entornos
-├── main.py                 # Punto de entrada del bot
-├── Dockerfile              # Definición de construcción Docker
-├── run_debug.sh            # Script para ejecutar en modo debug
+nicobank/
+├── bot/                         # Código fuente del bot
+│   ├── agent/                   # Agente LangChain y configuración
+│   │   └── conversation_agent.py
+│   ├── handlers/                # Manejadores de mensajes
+│   │   ├── message_handler.py
+│   │   ├── audio_handler.py
+│   │   └── global_error_handler.py
+│   ├── services/                # Integraciones externas
+│   │   ├── whisper_transcriber.py
+│   │   └── telegram_api.py
+│   ├── tools/                   # Tools LangChain
+│   │   ├── authenticate_user.py
+│   │   ├── check_authentication.py
+│   │   ├── get_balance.py
+│   │   ├── get_loan_history.py
+│   │   ├── get_transactions.py
+│   │   ├── loan_simulator.py
+│   ├── utils/                   # Funciones utilitarias
+│        ├── audio_converter.py
+│        └── redis_utils.py
+├── tests/                       # Pruebas unitarias
+│   ├── tools/
+│   ├── services/
+│   └── conftest.py              # Fixtures de testing
+├── config.py                    # Configuración dinámica de entornos
+├── main.py                      # Punto de entrada del bot
+├── Dockerfile                   # Dockerfile para el contenedor
 ├── docker-compose-development.yml
 ├── docker-compose-production.yml
-├── .env.example
-├── .env.production.example
-├── .github/workflows/     # GitHub Actions CI/CD
+├── run_debug.sh                 # Script de ejecución local en producción
+├── requirements.txt             # Dependencias Python
+├── .env.example                 # Plantilla de variables de entorno local
+├── .env.production.example      # Plantilla de entorno de producción
+├── .github/
+│   └── workflows/
+│       └── deploy.yml           # CI/CD con GitHub Actions
+├── README.md                    # Documentación principal del proyecto
+└── .gitignore
+
 ```
 
 ## Scripts

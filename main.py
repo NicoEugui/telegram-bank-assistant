@@ -1,5 +1,7 @@
 from telegram.ext import Application, MessageHandler, filters
 from bot.handlers.message_handler import handle_text_message
+from bot.handlers.audio_handler import handle_audio_message
+
 from bot.handlers.global_error_handler import global_error_handler
 from config import TELEGRAM_BOT_TOKEN
 
@@ -18,6 +20,8 @@ def run_bot() -> None:
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message)
     )
+
+    app.add_handler(MessageHandler(filters.VOICE, handle_audio_message))
 
     app.add_error_handler(global_error_handler)
 
