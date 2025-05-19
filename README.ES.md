@@ -1,6 +1,6 @@
 # Asistente NicoBank
 
-Asistente NicoBank es un bot bancario conversacional que simula servicios financieros típicos a través de una interfaz de lenguaje natural. Fue diseñado como un desafío técnico para demostrar la integración de IA, herramientas estructuradas, flujos de autenticación seguros y despliegue modular con Docker.
+El Asistente NicoBank es un bot bancario conversacional que simula servicios financieros típicos a través de una interfaz de lenguaje natural. Fue diseñado como un desafío técnico para demostrar la integración de IA, herramientas estructuradas, flujos de autenticación seguros y despliegue modular con Docker.
 
 Este bot funciona en Telegram y está impulsado por OpenAI + LangChain, con soporte para persistencia en Redis, desarrollo local con Docker y despliegues de producción con GitHub Actions.
 
@@ -17,7 +17,7 @@ Este bot funciona en Telegram y está impulsado por OpenAI + LangChain, con sopo
 - [Despliegue](#despliegue)
 - [CI/CD](#cicd)
 - [Estructura del Proyecto](#estructura-del-proyecto)
-- [Comandos Makefile](#comandos-makefile)
+- [Scripts](#scripts)
 
 ## Características
 
@@ -137,10 +137,10 @@ Cliente de riesgo bajo con ingresos mensuales estimados en $45,000 y nivel credi
 
 ## Pruebas
 
-Ejecuta pruebas localmente con:
+Ejecuta pruebas usando Docker:
 
 ```bash
-make test
+docker-compose -f docker-compose-development.yml up --build
 ```
 
 Toda la lógica basada en Redis se prueba utilizando fixtures en conftest.py.
@@ -148,7 +148,7 @@ Toda la lógica basada en Redis se prueba utilizando fixtures en conftest.py.
 Pytest está configurado a través de pytest.ini. Para ejecutar solo un subconjunto:
 
 ```bash
-pytest tests/tools/test_get_balance.py
+docker-compose -f docker-compose-development.yml run --rm app pytest tests/tools/test_get_balance.py
 ```
 
 ## Despliegue
@@ -160,11 +160,17 @@ Asegúrate de estar en la rama main y que tu VM remota esté configurada con:
 - Docker y Docker Compose
 - Acceso SSH usando tu clave de GitHub Actions
 
-Luego:
+Luego usa el script run_debug.sh:
 
 ```bash
-make prod
+./run_debug.sh
 ```
+
+Este script realizará:
+1. Detener y eliminar contenedores, volúmenes y red existentes
+2. Construir contenedores sin usar caché
+3. Iniciar contenedores en modo desacoplado
+4. Mostrar logs en vivo del servicio de la aplicación
 
 O activa el pipeline CI/CD mediante push a main.
 
@@ -193,7 +199,7 @@ Secretos utilizados:
 ├── config.py               # Gestión y validación de entornos
 ├── main.py                 # Punto de entrada del bot
 ├── Dockerfile              # Definición de construcción Docker
-├── Makefile                # Atajos CLI para dev/prod
+├── run_debug.sh            # Script para ejecutar en modo debug
 ├── docker-compose-development.yml
 ├── docker-compose-production.yml
 ├── .env.example
@@ -201,12 +207,37 @@ Secretos utilizados:
 ├── .github/workflows/     # GitHub Actions CI/CD
 ```
 
-## Comandos Makefile
+## Scripts
 
+### run_debug.sh
+
+Este script bash maneja el proceso completo de despliegue:
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+COMPOSE_FILE="docker-compose-production.yml"
+APP_SERVICE="nicobank"
+
+echo "[⚙️] Stopping and removing containers, volumes and network..."
+docker-compose -f "$COMPOSE_FILE" down --volumes
+
+echo "[🔧] Building containers without cache..."
+docker-compose -f "$COMPOSE_FILE" build --no-cache
+
+echo "[🚀] Starting containers in detached mode..."
+docker-compose -f "$COMPOSE_FILE" up -d
+
+echo "[📜] Waiting a few seconds for containers to initialize..."
+sleep 3
+
+echo "[🔍] Showing live logs from app service: $APP_SERVICE"
+docker-compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE"
 ```
-make dev          # Iniciar entorno de desarrollo local
-make test         # Ejecutar suite de pruebas
-make logs         # Ver logs de contenedores Docker
-make clean        # Limpiar contenedores y volúmenes
-make prod         # Iniciar construcción de producción localmente (si es necesario)
-```
+
+
+Para usarlo:
+1. Haz el script ejecutable: `chmod +x run_debug.sh`
+2. Ejecútalo: `./run_debug.sh`
