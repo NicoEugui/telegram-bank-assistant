@@ -61,8 +61,11 @@ jobs:
             echo "[Deploy] Pulling latest changes..."
             git pull origin main
 
-            echo "[Build] Building and restarting production..."
-            docker-compose -f docker-compose-production.yml up -d --build
+            echo "[Build] Rebuilding containers without cache..."
+            docker-compose -f docker-compose-production.yml build --no-cache
 
-            echo "[Logs] Showing last 50 lines..."
+            echo "[Run] Restarting application in detached mode..."
+            docker-compose -f docker-compose-production.yml up -d
+
+            echo "[Logs] Showing last 50 lines of app logs..."
             docker-compose -f docker-compose-production.yml logs --tail=50 nicobank

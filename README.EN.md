@@ -17,7 +17,7 @@ This bot runs on Telegram and is powered by OpenAI + LangChain, with support for
 - [Deployment](#deployment)
 - [CI/CD](#cicd)
 - [Project Structure](#project-structure)
-- [Makefile Commands](#makefile-commands)
+- [Scripts](#scripts)
 
 ## Features
 
@@ -100,7 +100,7 @@ REDIS_PORT=6379
 | Mode | File | Docker Compose | Use |
 |------|------|----------------|-----|
 | Development | .env | docker-compose-development.yml | Local development on your machine |
-| Production | .env.production | docker-compose-production.yml | Remote deploy to GCP, CI/CD |
+| Production | .env.production | docker-compose-production.yml | Remote deploy to VM, CI/CD |
 
 All environments are handled via config.py, which validates ENV and loads the appropriate .env.* file.
 
@@ -137,10 +137,10 @@ Cliente de riesgo bajo con ingresos mensuales estimados en $45,000 y nivel credi
 
 ## Testing
 
-Run tests locally with:
+Run tests using Docker:
 
 ```bash
-make test
+docker-compose -f docker-compose-development.yml up --build
 ```
 
 All Redis-based logic is tested using fixtures in conftest.py.
@@ -148,23 +148,29 @@ All Redis-based logic is tested using fixtures in conftest.py.
 Pytest is configured via pytest.ini. To run only a subset:
 
 ```bash
-pytest tests/tools/test_get_balance.py
+docker-compose -f docker-compose-development.yml run --rm app pytest tests/tools/test_get_balance.py
 ```
 
 ## Deployment
 
 ### Deploy to production (manually)
 
-Ensure you're on main branch and your GCP VM is set up with:
+Ensure you're on main branch and your remote VM is set up with:
 
 - Docker & Docker Compose
 - SSH access using your GitHub Actions key
 
-Then:
+Then use the run_debug.sh script:
 
 ```bash
-make prod
+./run_debug.sh
 ```
+
+This script will:
+1. Stop and remove existing containers, volumes, and network
+2. Build containers without using cache
+3. Start containers in detached mode
+4. Display live logs from the app service
 
 Or trigger the CI/CD pipeline via push to main.
 
@@ -193,7 +199,7 @@ Secrets used:
 ├── config.py               # Environment management and validation
 ├── main.py                 # Bot entrypoint
 ├── Dockerfile              # Docker build definition
-├── Makefile                # CLI shortcuts for dev/prod
+├── run_debug.sh            # Script for running in debug mode
 ├── docker-compose-development.yml
 ├── docker-compose-production.yml
 ├── .env.example
@@ -201,12 +207,36 @@ Secrets used:
 ├── .github/workflows/     # GitHub Actions CI/CD
 ```
 
-## Makefile Commands
+## Scripts
 
+### run_debug.sh
+
+This bash script handles the complete deployment process:
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+COMPOSE_FILE="docker-compose-production.yml"
+APP_SERVICE="nicobank"
+
+echo "[⚙️] Stopping and removing containers, volumes and network..."
+docker-compose -f "$COMPOSE_FILE" down --volumes
+
+echo "[🔧] Building containers without cache..."
+docker-compose -f "$COMPOSE_FILE" build --no-cache
+
+echo "[🚀] Starting containers in detached mode..."
+docker-compose -f "$COMPOSE_FILE" up -d
+
+echo "[📜] Waiting a few seconds for containers to initialize..."
+sleep 3
+
+echo "[🔍] Showing live logs from app service: $APP_SERVICE"
+docker-compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE"
 ```
-make dev          # Start local development environment
-make test         # Run test suite
-make logs         # Tail logs from Docker containers
-make clean        # Clean containers and volumes
-make prod         # Start production build locally (if needed)
-```
+
+To use it:
+1. Make the script executable: `chmod +x run_debug.sh`
+2. Run it: `./run_debug.sh`
