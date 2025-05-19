@@ -6,18 +6,18 @@ Este bot funciona en Telegram y está impulsado por OpenAI + LangChain, con sopo
 
 ## Tabla de Contenidos
 
-- [Características](../../../Downloads/nicobank_es.md#características)
-- [Arquitectura](../../../Downloads/nicobank_es.md#arquitectura)
-- [Tecnologías](../../../Downloads/nicobank_es.md#tecnologías)
-- [Primeros Pasos](../../../Downloads/nicobank_es.md#primeros-pasos)
-- [Entornos](../../../Downloads/nicobank_es.md#entornos)
-- [Capacidades de Conversación](../../../Downloads/nicobank_es.md#capacidades-de-conversación)
-- [Seguridad y Autenticación](../../../Downloads/nicobank_es.md#seguridad-y-autenticación)
-- [Pruebas](../../../Downloads/nicobank_es.md#pruebas)
-- [Despliegue](../../../Downloads/nicobank_es.md#despliegue)
-- [CI/CD](../../../Downloads/nicobank_es.md#cicd)
-- [Estructura del Proyecto](../../../Downloads/nicobank_es.md#estructura-del-proyecto)
-- [Comandos Makefile](../../../Downloads/nicobank_es.md#comandos-makefile)
+- [Características](#características)
+- [Arquitectura](#arquitectura)
+- [Tecnologías](#tecnologías)
+- [Primeros Pasos](#primeros-pasos)
+- [Entornos](#entornos)
+- [Capacidades de Conversación](#capacidades-de-conversación)
+- [Seguridad y Autenticación](#seguridad-y-autenticación)
+- [Pruebas](#pruebas)
+- [Despliegue](#despliegue)
+- [CI/CD](#cicd)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Comandos Makefile](#comandos-makefile)
 
 ## Características
 
