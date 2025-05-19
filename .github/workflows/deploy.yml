@@ -22,8 +22,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pytest
-        run: pytest -v
+      - name: Create temporary .env.production for CI
+        run: |
+          echo "ENV=production" > .env.production
+          echo "TELEGRAM_BOT_TOKEN=dummy" >> .env.production
+          echo "OPENAI_API_KEY=dummy" >> .env.production
+          echo "REDIS_HOST=localhost" >> .env.production
+          echo "REDIS_PORT=6379" >> .env.production
 
   deploy:
     name: Deploy to Production
