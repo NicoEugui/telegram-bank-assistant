@@ -142,9 +142,54 @@ Cliente de riesgo bajo con ingresos mensuales estimados en $45,000 y nivel credi
 
 ## Security and Authentication
 
-- Users are required to enter a valid PIN before accessing sensitive features.
-- `check_authentication` and `authenticate_user` tools verify and persist session state.
-- Each user's state is stored in Redis with a TTL of 1 hour.
+User security is a priority in NicoBank. Therefore, certain functionalities require prior authentication using a PIN.
+
+### Authentication flow
+
+- At the beginning of a conversation, the user can interact freely.
+- If they try to access sensitive features (such as checking balance, transactions, or loan history), a PIN will be requested.
+- Once the PIN is entered and validated, the user is considered authenticated for a limited time.
+
+### Features that require PIN
+
+- `get_balance` – Balance inquiry
+- `get_transactions` – Recent transactions
+- `get_loan_history` – Simulated loan history
+- `loan_simulator` – (if the profile requires prior authentication)
+
+### Default PIN
+
+- The default PIN is `1234`.
+- You can change it by modifying the `PIN_CODE` constant inside the `config.py` file.
+
+```python
+# config.py
+PIN_CODE = "1234"  # You can change it here
+```
+
+### Storage and validity
+
+- The authentication state is stored per user in Redis, using the key: `auth_state:{user_id}`
+- Cada sesión tiene un TTL (tiempo de expiración) de 1 hora.
+
+### Tools used
+
+`authenticate_user` → Validates the PIN and marks the user as authenticated.
+
+`check_authentication` → Verifies whether the user has already authenticated.
+
+### Interaction example
+
+```
+User: Show me my latest transactions
+
+Bot: Before I can show you that information, I need you to enter your PIN.
+
+User: 1234
+
+Bot: Authentication successful. Now I’ll show you the requested information.
+
+```
 
 ## Testing
 
@@ -208,43 +253,47 @@ Secrets used:
 .
 nicobank/
 ├── bot/                         # Bot source code
-│   ├── agent/                   # LangChain conversational agent
+│   ├── agent/                   # LangChain conversational agent logic
 │   │   └── conversation_agent.py
-│   ├── handlers/                # Telegram message handlers
-│   │   ├── message_handler.py        # Handles text input
-│   │   ├── audio_handler.py          # Converts voice messages to text
-│   │   └── global_error_handler.py   # Logs and handles unexpected exceptions
-│   ├── services/                # External service integrations
-│   │   ├── whisper_transcriber.py    # OpenAI Whisper integration
-│   │   └── telegram_api.py           # Telegram API helpers (file download, etc.)
-│   ├── tools/                   # LangChain tools (banking features)
+│   ├── handlers/                # Telegram update handlers
+│   │   ├── message_handler.py        # Processes user text messages
+│   │   ├── audio_handler.py          # Handles voice input via Whisper
+│   │   └── global_error_handler.py   # Captures and logs unexpected exceptions
+│   ├── prompts/                 # Prompt engineering definitions
+│   │   └── system_prompts.py         # Static system prompts for AI behavior
+│   ├── services/                # External service wrappers
+│   │   ├── interaction_tracker.py    # Tracks user message count
+│   │   ├── redis_service.py          # Redis read/write abstraction
+│   │   ├── response_humanizer.py     # Refines assistant replies
+│   │   └── whisper_transcriber.py    # Voice-to-text via OpenAI Whisper
+│   ├── tools/                   # LangChain tools for banking features
 │   │   ├── authenticate_user.py
 │   │   ├── check_authentication.py
 │   │   ├── get_balance.py
 │   │   ├── get_loan_history.py
 │   │   ├── get_transactions.py
-│   │   ├── loan_simulator.py
-│   ├── utils/                   # Utility functions
-│   │   ├── audio_converter.py        # Converts .ogg to .wav using FFmpeg
-│   │   └── redis_utils.py            # Redis read/write abstraction
-├── tests/                       # Unit test suite
-│   ├── tools/                        # Tests for each LangChain tool
+│   │   └── loan_simulator.py
+│   ├── utils/                   # General-purpose utility functions
+│   │   ├── audio_converter.py        # Converts Telegram .ogg to .wav with FFmpeg
+│   │   └── time_helpers.py           # Formats timestamps and dates
+├── tests/                       # Pytest-based unit test suite
+│   ├── tools/                        # Tests for LangChain tools
 │   ├── services/                     # Tests for service modules
-│   └── conftest.py                  # Global fixtures for Pytest
-├── config.py                    # Loads and validates environment settings
-├── main.py                      # Bot entrypoint for Telegram polling
-├── Dockerfile                   # Build instructions for Docker image
-├── docker-compose-development.yml   # Docker Compose config for development
-├── docker-compose-production.yml    # Docker Compose config for production
-├── run_debug.sh                 # Shell script to rebuild and run app in prod
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Local environment template
-├── .env.production.example      # Production environment template
+│   └── conftest.py                  # Pytest shared test fixtures
+├── config.py                    # Loads environment variables and validates settings
+├── main.py                      # Application entrypoint (Telegram polling)
+├── Dockerfile                   # Docker image definition
+├── docker-compose-development.yml   # Compose config for local development
+├── docker-compose-production.yml    # Compose config for remote deployment
+├── run_debug.sh                 # Shell script for clean build and live logs
+├── requirements.txt             # Python dependency list
+├── .env.example                 # Example environment variables for development
+├── .env.production.example      # Example environment file for production
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # GitHub Actions workflow (CI/CD)
-├── README.md                    # Main project documentation
-└── .gitignore                   # Git exclusions
+│       └── deploy.yml           # GitHub Actions CI/CD pipeline
+├── README.md                    # Project overview and instructions
+└── .gitignore                   # Files and paths excluded from Git
 
 ```
 

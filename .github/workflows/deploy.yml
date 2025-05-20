@@ -37,7 +37,10 @@ jobs:
           echo "REDIS_PORT=6379" >> .env.production
 
       - name: Run pytest
-        run: pytest -v
+        run: |
+          export PYTHONPATH=.
+          pytest -v --tb=short
+
 
   deploy:
     name: Deploy to Production
